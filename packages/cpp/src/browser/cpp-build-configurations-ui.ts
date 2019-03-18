@@ -23,7 +23,8 @@ import URI from '@theia/core/lib/common/uri';
 import { PreferenceScope, PreferenceService } from '@theia/preferences/lib/browser';
 import { CppBuildConfigurationManager, CppBuildConfiguration, CPP_BUILD_CONFIGURATIONS_PREFERENCE_KEY } from './cpp-build-configurations';
 import { EditorManager } from '@theia/editor/lib/browser';
-import { CommonCommands } from '@theia/core/lib/browser';
+import { CommonCommands, QuickPickService, LabelProvider } from '@theia/core/lib/browser';
+import { WorkspaceService } from '@theia/workspace/lib/browser';
 
 @injectable()
 export class CppBuildConfigurationChanger implements QuickOpenModel {
@@ -40,11 +41,25 @@ export class CppBuildConfigurationChanger implements QuickOpenModel {
     @inject(FileSystem)
     protected readonly fileSystem: FileSystem;
 
+    @inject(LabelProvider)
+    protected readonly labelProvider: LabelProvider;
+
+    @inject(QuickPickService)
+    protected readonly quickPick: QuickPickService;
+
     @inject(QuickOpenService)
     protected readonly quickOpenService: QuickOpenService;
 
     @inject(PreferenceService)
     protected readonly preferenceService: PreferenceService;
+
+    @inject(WorkspaceService)
+    protected readonly workspaceService: WorkspaceService;
+
+    /**
+     * The selected root to update the config.
+     */
+    protected selectedRoot: string | undefined;
 
     readonly createItem: QuickOpenItem = new QuickOpenItem({
         label: 'Create New',
@@ -67,15 +82,20 @@ export class CppBuildConfigurationChanger implements QuickOpenModel {
             if (mode !== QuickOpenMode.OPEN) {
                 return false;
             }
-            this.commandService.executeCommand(CPP_RESET_BUILD_CONFIGURATION.id);
+            this.cppBuildConfigurations.setActiveConfig(undefined, this.selectedRoot);
             return true;
         },
     });
 
     async onType(lookFor: string, acceptor: (items: QuickOpenItem[]) => void): Promise<void> {
         const items: QuickOpenItem[] = [];
-        const active: CppBuildConfiguration | undefined = this.cppBuildConfigurations.getActiveConfig();
-        const configurations = this.cppBuildConfigurations.getValidConfigs();
+        let active: CppBuildConfiguration | undefined;
+        if (this.selectedRoot) {
+            active = this.cppBuildConfigurations.getActiveConfig();
+        } else {
+            active = this.cppBuildConfigurations.getActiveConfig(this.selectedRoot);
+        }
+        const configurations = this.cppBuildConfigurations.getValidConfigs(this.selectedRoot);
 
         const homeStat = await this.fileSystem.getCurrentUserHome();
         const home = (homeStat) ? new URI(homeStat.uri).withoutScheme().toString() : undefined;
@@ -88,6 +108,13 @@ export class CppBuildConfigurationChanger implements QuickOpenModel {
             return acceptor(items);
         }
 
+        console.log(
+            `
+            active: ${active ? active.name : active}
+            root:   ${this.selectedRoot}
+            `
+        );
+
         // Item to de-select any active build config
         if (active) {
             items.push(this.resetItem);
@@ -95,6 +122,13 @@ export class CppBuildConfigurationChanger implements QuickOpenModel {
 
         // Add one item per build config
         configurations.forEach(config => {
+            console.log(
+                `
+                for=config: ${config.name}
+                for=active: ${active ? active.name : active}
+                equal?: ${config === active}
+                `
+            );
             const uri = new URI(config.directory);
             items.push(new QuickOpenItem({
                 label: config.name,
@@ -106,7 +140,7 @@ export class CppBuildConfigurationChanger implements QuickOpenModel {
                         return false;
                     }
 
-                    this.cppBuildConfigurations.setActiveConfig(config);
+                    this.cppBuildConfigurations.setActiveConfig(config, this.selectedRoot);
                     return true;
                 },
             }));
@@ -115,7 +149,9 @@ export class CppBuildConfigurationChanger implements QuickOpenModel {
         acceptor(items);
     }
 
-    open() {
+    async open() {
+        const root = await this.selectWorkspaceRoot();
+        this.selectedRoot = root;
         const configs = this.cppBuildConfigurations.getValidConfigs();
         this.quickOpenService.open(this, {
             placeholder: (configs.length) ? 'Choose a build configuration...' : 'No build configurations present',
@@ -130,6 +166,19 @@ export class CppBuildConfigurationChanger implements QuickOpenModel {
         const configs = this.cppBuildConfigurations.getConfigs().slice(0);
         configs.push({ name: '', directory: '' });
         await this.preferenceService.set(CPP_BUILD_CONFIGURATIONS_PREFERENCE_KEY, configs, PreferenceScope.Workspace);
+    }
+
+    protected async selectWorkspaceRoot(): Promise<string | undefined> {
+        const roots = this.workspaceService.tryGetRoots();
+        return this.quickPick.show(roots.map(
+            ({ uri }) => ({
+                label: this.labelProvider.getName(new URI(uri).withoutScheme()),
+                value: uri,
+                description: this.cppBuildConfigurations.getActiveConfig(uri)
+                    ? this.cppBuildConfigurations.getActiveConfig(uri)!.name
+                    : 'undefined'
+            })
+        ), { placeholder: 'Select workspace root' });
     }
 
 }
