@@ -190,7 +190,8 @@ export class TaskService implements TaskConfigurationClient {
             this.logger.error(`Can't get task launch configuration for label: ${taskLabel}`);
             return;
         }
-        this.run(task._source, task.label);
+
+        this.runTask(task);
     }
 
     /**
@@ -217,6 +218,13 @@ export class TaskService implements TaskConfigurationClient {
                 return;
             }
         }
+
+        this.runTask(task);
+    }
+
+    async runTask(task: TaskConfiguration): Promise<void> {
+        const source = task._source;
+        const taskLabel = task.label;
 
         const resolver = this.taskResolverRegistry.getResolver(task.type);
         let resolvedTask: TaskConfiguration;

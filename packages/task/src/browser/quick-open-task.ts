@@ -205,7 +205,12 @@ export class TaskRunQuickOpenItem extends QuickOpenGroupItem {
         if (mode !== QuickOpenMode.OPEN) {
             return false;
         }
-        this.taskService.run(this.task._source, this.task.label);
+
+        if (this.isConfigured) {
+            this.taskService.runConfiguredTask(this.task._source, this.task.label);
+        } else {
+            this.taskService.run(this.task._source, this.task.label);
+        }
 
         return true;
     }
