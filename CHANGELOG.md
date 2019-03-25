@@ -2,6 +2,7 @@
 
 ## v0.5.0
 - [plugin] `workspace.openTextDocument` API now respects the contributed `FileSystemProviders`
+- [task] added support to configure tasks
 
 Breaking changes:
 - [editor] computation of resource context keys moved to core [#4531](https://github.com/theia-ide/theia/pull/4531)

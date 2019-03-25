@@ -743,8 +743,125 @@ declare module monaco.quickOpen {
         setShowBorder(showBorder: boolean): void;
         getEntry(): QuickOpenEntry | undefined;
     }
+
+    export interface INextIterator<T> {
+        next(): T | null;
+    }
+
+    export interface INavigator<T> extends INextIterator<T> {
+        current(): T | null;
+        previous(): T | null;
+        parent(): T | null;
+        first(): T | null;
+        last(): T | null;
+        next(): T | null;
+    }
+
+    export interface ITree {
+        getHTMLElement(): HTMLElement;
+        layout(height?: number): void;
+        onVisible(): void;
+        onHidden(): void;
+        setInput(element: any): Promise<any>;
+        getInput(): any;
+        domFocus(): void;
+        isDOMFocused(): boolean;
+        domBlur(): void;
+        refresh(element?: any, recursive?: boolean): Promise<any>;
+        expand(element: any): Promise<any>;
+        expandAll(elements?: any[]): Promise<any>;
+        collapse(element: any, recursive?: boolean): Promise<any>;
+        collapseAll(elements?: any[], recursive?: boolean): Promise<any>;
+        toggleExpansion(element: any, recursive?: boolean): Promise<any>;
+        toggleExpansionAll(elements: any[]): Promise<any>;
+        isExpanded(element: any): boolean;
+        getExpandedElements(): any[];
+        reveal(element: any, relativeTop?: number): Promise<any>;
+        getRelativeTop(element: any): number;
+        getFirstVisibleElement(): any;
+        getScrollPosition(): number;
+        setScrollPosition(pos: number): void;
+        getContentHeight(): number;
+        setHighlight(element?: any, eventPayload?: any): void;
+        getHighlight(includeHidden?: boolean): any;
+        isHighlighted(element: any): boolean;
+        clearHighlight(eventPayload?: any): void;
+        select(element: any, eventPayload?: any): void;
+        selectRange(fromElement: any, toElement: any, eventPayload?: any): void;
+        deselectRange(fromElement: any, toElement: any, eventPayload?: any): void;
+        selectAll(elements: any[], eventPayload?: any): void;
+        deselect(element: any, eventPayload?: any): void;
+        deselectAll(elements: any[], eventPayload?: any): void;
+        setSelection(elements: any[], eventPayload?: any): void;
+        toggleSelection(element: any, eventPayload?: any): void;
+        getSelection(includeHidden?: boolean): any[];
+        isSelected(element: any): boolean;
+        selectNext(count?: number, clearSelection?: boolean, eventPayload?: any): void;
+        selectPrevious(count?: number, clearSelection?: boolean, eventPayload?: any): void;
+        selectParent(clearSelection?: boolean, eventPayload?: any): void;
+        clearSelection(eventPayload?: any): void;
+        setFocus(element?: any, eventPayload?: any): void;
+        isFocused(element: any): boolean;
+        getFocus(includeHidden?: boolean): any;
+        focusNext(count?: number, eventPayload?: any): void;
+        focusPrevious(count?: number, eventPayload?: any): void;
+        focusParent(eventPayload?: any): void;
+        focusFirstChild(eventPayload?: any): void;
+        focusFirst(eventPayload?: any, from?: any): void;
+        focusNth(index: number, eventPayload?: any): void;
+        focusLast(eventPayload?: any, from?: any): void;
+        focusNextPage(eventPayload?: any): void;
+        focusPreviousPage(eventPayload?: any): void;
+        clearFocus(eventPayload?: any): void;
+        addTraits(trait: string, elements: any[]): void;
+        removeTraits(trait: string, elements: any[]): void;
+        toggleTrait(trait: string, element: any): void;
+        hasTrait(trait: string, element: any): boolean;
+        getNavigator(fromElement?: any, subTreeOnly?: boolean): INavigator<any>;
+        dispose(): void;
+    }
+
+    export interface IAction extends IDisposable {
+        id: string;
+        label: string;
+        tooltip: string;
+        class: string | undefined;
+        enabled: boolean;
+        checked: boolean;
+        radio: boolean;
+        run(event?: any): PromiseLike<any>;
+    }
+
+    export interface IActionItem {
+        actionRunner: IActionRunner;
+        setActionContext(context: any): void;
+        render(element: any /* HTMLElement */): void;
+        isEnabled(): boolean;
+        focus(): void;
+        blur(): void;
+        dispose(): void;
+    }
+
+    export interface IRunEvent {
+        action: IAction;
+        result?: any;
+        error?: any;
+    }
+
+    export interface IActionRunner extends IDisposable {
+        run(action: IAction, context?: any): PromiseLike<any>;
+    }
+
+    export interface IActionProvider {
+        hasActions(tree: ITree | null, element: any): boolean;
+        getActions(tree: ITree | null, element: any): monaco.Promise<IAction[]>;
+        hasSecondaryActions(tree: ITree, element: any): boolean;
+        getSecondaryActions(tree: ITree, element: any): monaco.Promise<IAction[]>;
+        getActionItem(tree: ITree, element: any, action: IAction): IActionItem | null;
+    }
+
     export class QuickOpenModel implements IModel<QuickOpenEntry>, IDataSource<QuickOpenEntry>, IFilter<QuickOpenEntry>, IRunner<QuickOpenEntry> {
-        constructor(entries?: QuickOpenEntry[] /*, actionProvider?: IActionProvider */);
+        constructor(entries?: QuickOpenEntry[], actionProvider?: IActionProvider);
         addEntries(entries: QuickOpenEntry[]): void;
         entries: QuickOpenEntry[];
         dataSource: IDataSource<QuickOpenEntry>;

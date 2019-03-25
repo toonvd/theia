@@ -288,6 +288,10 @@ export class TaskService implements TaskConfigurationClient {
         widget.start(terminalId);
     }
 
+    async configure(task: TaskConfiguration): Promise<void> {
+        await this.taskConfigurations.configure(task);
+    }
+
     protected isEventForThisClient(context: string | undefined): boolean {
         if (context === this.getContext()) {
             return true;

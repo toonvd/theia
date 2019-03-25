@@ -17,12 +17,13 @@
 import { injectable, inject, postConstruct } from 'inversify';
 import { MessageType } from '@theia/core/lib/common/message-service-protocol';
 import {
-    QuickOpenService, QuickOpenModel, QuickOpenOptions,
-    QuickOpenItem, QuickOpenGroupItem, QuickOpenMode, KeySequence
+    QuickOpenService, QuickOpenModel, QuickOpenOptions, QuickOpenItem,
+    QuickOpenGroupItem, QuickOpenMode, KeySequence
 } from '@theia/core/lib/browser';
 import { KEY_CODE_MAP } from './monaco-keycode-map';
 import { ContextKey } from '@theia/core/lib/browser/context-key-service';
 import { MonacoContextKeyService } from './monaco-context-key-service';
+import { ActionProvider } from '@theia/core/lib/browser/quick-open/quick-open-action';
 
 export interface MonacoQuickOpenControllerOpts extends monaco.quickOpen.IQuickOpenControllerOpts {
     readonly prefix?: string;
@@ -215,7 +216,7 @@ export class MonacoQuickOpenControllerOptsImpl implements MonacoQuickOpenControl
         this.options.onClose(cancelled);
     }
 
-    private toOpenModel(lookFor: string, items: QuickOpenItem[]): monaco.quickOpen.QuickOpenModel {
+    private toOpenModel(lookFor: string, items: QuickOpenItem[], actionProvider?: ActionProvider): monaco.quickOpen.QuickOpenModel {
         const entries: monaco.quickOpen.QuickOpenEntry[] = [];
         for (const item of items) {
             const entry = this.createEntry(item, lookFor);
@@ -226,7 +227,7 @@ export class MonacoQuickOpenControllerOptsImpl implements MonacoQuickOpenControl
         if (this.options.fuzzySort) {
             entries.sort((a, b) => monaco.quickOpen.compareEntries(a, b, lookFor));
         }
-        return new monaco.quickOpen.QuickOpenModel(entries);
+        return new monaco.quickOpen.QuickOpenModel(entries, actionProvider ? new QuickOpenActionProvider(actionProvider) : undefined);
     }
 
     getModel(lookFor: string): monaco.quickOpen.QuickOpenModel {
@@ -234,8 +235,8 @@ export class MonacoQuickOpenControllerOptsImpl implements MonacoQuickOpenControl
     }
 
     onType(lookFor: string, acceptor: (model: monaco.quickOpen.QuickOpenModel) => void): void {
-        this.model.onType(lookFor, items => {
-            const result = this.toOpenModel(lookFor, items);
+        this.model.onType(lookFor, (items, actionProvider) => {
+            const result = this.toOpenModel(lookFor, items, actionProvider);
             acceptor(result);
         });
     }
@@ -407,4 +408,33 @@ export class QuickOpenEntryGroup extends monaco.quickOpen.QuickOpenEntryGroup {
         return this.item.showBorder();
     }
 
+}
+
+export class QuickOpenActionProvider implements monaco.quickOpen.IActionProvider {
+    constructor(public readonly provider: ActionProvider) { }
+
+    // tslint:disable-next-line:no-any
+    hasActions(tree: monaco.quickOpen.ITree | null, entry: any): boolean {
+        return this.provider.hasActions(entry);
+    }
+
+    // tslint:disable-next-line:no-any
+    getActions(tree: monaco.quickOpen.ITree | null, entry: any): monaco.Promise<monaco.quickOpen.IAction[]> {
+        return monaco.Promise.wrap(this.provider.getActions(entry));
+    }
+
+    // tslint:disable-next-line:no-any
+    hasSecondaryActions(tree: monaco.quickOpen.ITree, entry: any): boolean {
+        return this.provider.hasSecondaryActions(entry);
+    }
+
+    // tslint:disable-next-line:no-any
+    getSecondaryActions(tree: monaco.quickOpen.ITree, entry: any): monaco.Promise<monaco.quickOpen.IAction[]> {
+        return monaco.Promise.wrap(this.provider.getSecondaryActions(entry));
+    }
+
+    // tslint:disable-next-line:no-any
+    getActionItem(tree: monaco.quickOpen.ITree, entry: any, action: monaco.quickOpen.IAction): monaco.quickOpen.IActionItem | null {
+        return this.provider.getActionItem(entry, action);
+    }
 }
