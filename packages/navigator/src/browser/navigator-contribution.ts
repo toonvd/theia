@@ -204,6 +204,9 @@ export class FileNavigatorContribution extends AbstractViewContribution<FileNavi
         registry.registerMenuAction(NavigatorContextMenu.NAVIGATION, {
             commandId: WorkspaceCommands.NEW_FOLDER.id
         });
+        registry.registerMenuAction(NavigatorContextMenu.NAVIGATION, {
+            commandId: WorkspaceCommands.UPLOAD_FILES.id
+        });
         registry.registerMenuAction(NavigatorContextMenu.COMPARE, {
             commandId: WorkspaceCommands.FILE_COMPARE.id
         });

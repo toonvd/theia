@@ -32,6 +32,7 @@ import { WorkspaceDeleteHandler } from './workspace-delete-handler';
 import { WorkspaceDuplicateHandler } from './workspace-duplicate-handler';
 import { FileSystemUtils } from '@theia/filesystem/lib/common';
 import { WorkspaceCompareHandler } from './workspace-compare-handler';
+import { FileDownloadService } from '@theia/filesystem/lib/browser/download/file-download-service';
 
 const validFilename: (arg: string) => boolean = require('valid-filename');
 
@@ -86,6 +87,11 @@ export namespace WorkspaceCommands {
         category: FILE_CATEGORY,
         label: 'New Folder'
     };
+    export const UPLOAD_FILES: Command = {
+        id: 'file.uploadFiles',
+        category: FILE_CATEGORY,
+        label: 'Upload Files...'
+    };
     export const FILE_OPEN_WITH = (opener: OpenHandler): Command => ({
         id: `file.openWith.${opener.id}`
     });
@@ -136,6 +142,9 @@ export class FileMenuContribution implements MenuContribution {
         registry.registerMenuAction(CommonMenus.FILE_NEW, {
             commandId: WorkspaceCommands.NEW_FOLDER.id
         });
+        registry.registerMenuAction(CommonMenus.FILE_NEW, {
+            commandId: WorkspaceCommands.UPLOAD_FILES.id
+        });
     }
 
 }
@@ -154,6 +163,7 @@ export class WorkspaceCommandContribution implements CommandContribution {
     @inject(WorkspaceDeleteHandler) protected readonly deleteHandler: WorkspaceDeleteHandler;
     @inject(WorkspaceDuplicateHandler) protected readonly duplicateHandler: WorkspaceDuplicateHandler;
     @inject(WorkspaceCompareHandler) protected readonly compareHandler: WorkspaceCompareHandler;
+    @inject(FileDownloadService) protected readonly downloadService: FileDownloadService;
 
     registerCommands(registry: CommandRegistry): void {
         this.openerService.getOpeners().then(openers => {
@@ -203,6 +213,14 @@ export class WorkspaceCommandContribution implements CommandContribution {
                             this.fileSystem.createFolder(parentUri.resolve(name).toString());
                         }
                     });
+                }
+            })
+        }));
+
+        registry.registerCommand(WorkspaceCommands.UPLOAD_FILES, this.newWorkspaceRootUriAwareCommandHandler({
+            execute: uri => this.getDirectory(uri).then(parent => {
+                if (parent) {
+                    this.downloadService.upload(parent.uri);
                 }
             })
         }));
