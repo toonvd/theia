@@ -19,8 +19,7 @@ import {
     createPreferenceProxy,
     PreferenceProxy,
     PreferenceService,
-    PreferenceSchema,
-    PreferenceContribution
+    PreferenceSchema
 } from '@theia/core/lib/browser/preferences';
 
 export const filesystemPreferenceSchema: PreferenceSchema = {
@@ -51,6 +50,4 @@ export function bindFileSystemPreferences(bind: interfaces.Bind): void {
         const preferences = ctx.container.get<PreferenceService>(PreferenceService);
         return createFileSystemPreferences(preferences);
     }).inSingletonScope();
-
-    bind(PreferenceContribution).toConstantValue({ schema: filesystemPreferenceSchema });
 }
