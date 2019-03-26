@@ -20,7 +20,7 @@ import {
     CommandRegistry, isOSX, ActionMenuNode, CompositeMenuNode,
     MAIN_MENU_BAR, MenuModelRegistry, MenuPath
 } from '../../common';
-import { PreferenceService, KeybindingRegistry, Keybinding, KeyCode, Key } from '../../browser';
+import { PreferenceService, KeybindingRegistry, Keybinding } from '../../browser';
 import { ContextKeyService } from '../../browser/context-key-service';
 import { Anchor } from '../../browser/context-menu-renderer';
 
@@ -151,63 +151,19 @@ export class ElectronMainMenuFactory {
     /**
      * Return a user visible representation of a keybinding.
      */
-    protected acceleratorFor(keybinding: Keybinding) {
-        const keyCodesString = keybinding.keybinding.split(' ');
-        let result = '';
+    protected acceleratorFor(keybinding: Keybinding): string {
+        const bindingKeySequence = this.keybindingRegistry.resolveKeybinding(keybinding);
         // FIXME see https://github.com/electron/electron/issues/11740
         // Key Sequences can't be represented properly in the electron menu.
         //
         // We can do what VS Code does, and append the chords as a suffix to the menu label.
         // https://github.com/theia-ide/theia/issues/1199#issuecomment-430909480
-        if (keyCodesString.length > 1) {
-            return result;
+        if (bindingKeySequence.length > 1) {
+            return '';
         }
 
-        const keyCodeString = keyCodesString[0];
-        const keyCode = KeyCode.parse(keyCodeString);
-        let previous = false;
-        const separator = '+';
-
-        if (keyCode.meta && isOSX) {
-            if (isOSX) {
-                result += 'Cmd';
-                previous = true;
-            }
-        }
-
-        if (keyCode.ctrl) {
-            if (previous) {
-                result += separator;
-            }
-            result += 'Ctrl';
-            previous = true;
-        }
-
-        if (keyCode.alt) {
-            if (previous) {
-                result += separator;
-            }
-            result += 'Alt';
-            previous = true;
-        }
-
-        if (keyCode.shift) {
-            if (previous) {
-                result += separator;
-            }
-            result += 'Shift';
-            previous = true;
-        }
-
-        if (keyCode.key) {
-            if (previous) {
-                result += separator;
-            }
-
-            result += Key.getEasyKey(keyCode.key).easyString;
-        }
-
-        return result;
+        const keyCode = bindingKeySequence[0];
+        return this.keybindingRegistry.acceleratorForKeyCode(keyCode, '+');
     }
 
     protected async execute(command: string, anchor?: Anchor): Promise<void> {

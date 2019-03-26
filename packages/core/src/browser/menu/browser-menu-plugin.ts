@@ -21,7 +21,7 @@ import {
     CommandRegistry, ActionMenuNode, CompositeMenuNode,
     MenuModelRegistry, MAIN_MENU_BAR, MenuPath, ILogger
 } from '../../common';
-import { KeybindingRegistry, Keybinding } from '../keybinding';
+import { KeybindingRegistry } from '../keybinding';
 import { FrontendApplicationContribution, FrontendApplication } from '../frontend-application';
 import { ContextKeyService } from '../context-key-service';
 import { Anchor } from '../context-menu-renderer';
@@ -106,7 +106,7 @@ export class BrowserMainMenuFactory {
         /* Only consider the first keybinding. */
         if (bindings.length > 0) {
             const binding = bindings[0];
-            const keys = Keybinding.acceleratorFor(binding);
+            const keys = this.keybindingRegistry.acceleratorFor(binding);
             commands.addKeyBinding({
                 command: command.id,
                 keys,
