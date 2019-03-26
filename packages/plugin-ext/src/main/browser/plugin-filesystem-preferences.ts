@@ -1,5 +1,5 @@
 /********************************************************************************
- * Copyright (C) 2017 TypeFox and others.
+ * Copyright (C) 2019 Red Hat, Inc. and others.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v. 2.0 which is available at
@@ -26,30 +26,17 @@ import {
 export const filesystemPreferenceSchema: PreferenceSchema = {
     'type': 'object',
     'properties': {
-        'files.watcherExclude': {
-            'description': 'List of paths to exclude from the filesystem watcher',
-            'additionalProperties': {
-                'type': 'boolean'
-            },
-            'default': {
-                '**/.git/objects/**': true,
-                '**/.git/subtree-cache/**': true,
-                '**/node_modules/**': true
-            },
-            'scope': 'resource'
-        },
-        'files.exclude': {
+        'files.associations': {
+            'description': 'Configure file associations to languages (e.g. "*.extension": "html"). \
+These have precedence over the default associations of the languages installed',
             'type': 'object',
-            'default': { '**/.git': true, '**/.svn': true, '**/.hg': true, '**/CVS': true, '**/.DS_Store': true },
-            'description': 'Configure glob patterns for excluding files and folders.',
-            'scope': 'resource'
-        }
+            'default': {}
+        },
     }
 };
 
 export interface FileSystemConfiguration {
-    'files.watcherExclude': { [globPattern: string]: boolean };
-    'files.exclude': { [key: string]: boolean };
+    'files.associations': { [filepattern: string]: string };
 }
 
 export const FileSystemPreferences = Symbol('FileSystemPreferences');
